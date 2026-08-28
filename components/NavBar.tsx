@@ -35,18 +35,16 @@ export default function NavBar({
   return (
     <header className="border-b bg-white sticky top-0 z-10">
       <div className="max-w-3xl mx-auto">
-        {/* Mobile: hamburger + current page + logout */}
+        {/* Mobile: current page on the left, hamburger on the right */}
         <div className="flex sm:hidden items-center justify-between gap-2 px-4 py-3">
+          <span className="font-medium text-slate-800">{currentLabel}</span>
           <button
             onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-2 text-slate-800 font-medium"
+            className="flex items-center justify-center w-9 h-9 -mr-1.5 text-slate-800"
             aria-expanded={open}
+            aria-label="メニュー"
           >
-            <span className="text-xl leading-none">{open ? "✕" : "☰"}</span>
-            <span>{currentLabel}</span>
-          </button>
-          <button onClick={logout} className="text-sm text-slate-500">
-            ログアウト
+            <span className="text-2xl leading-none">{open ? "✕" : "☰"}</span>
           </button>
         </div>
         {open && (
@@ -66,6 +64,12 @@ export default function NavBar({
                 {l.label}
               </Link>
             ))}
+            <button
+              onClick={logout}
+              className="w-full text-left px-3 py-2.5 rounded-md text-base text-slate-500 hover:bg-slate-100 border-t mt-1 pt-3"
+            >
+              ログアウト
+            </button>
           </div>
         )}
 
