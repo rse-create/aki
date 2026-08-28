@@ -24,7 +24,7 @@ type ProjectHeadcountRow = { name: string; employee: number; subcontractor: numb
 type DashboardData = {
   projectHeadcount: ProjectHeadcountRow[];
   projectExpensesByCategory: Pivot;
-  userHours: Point[];
+  userHeadcount: Point[];
   expenseByCategory: Point[];
   subcontractorHeadcount: Point[];
 };
@@ -228,7 +228,7 @@ export default function DashboardClient() {
         <>
           <ProjectHeadcountBars data={data.projectHeadcount} />
           <StackedBars title="案件別 経費（費目別）" unit="円" pivot={data.projectExpensesByCategory} />
-          <Bars title="作業者別 稼働時間" unit="時間" data={data.userHours} />
+          <Bars title="作業者別 稼働人工数" unit="人工" data={data.userHeadcount} />
           <ExpensePie data={data.expenseByCategory} />
           <Bars title="協力業者別 人工数" unit="人工" data={data.subcontractorHeadcount} />
         </>

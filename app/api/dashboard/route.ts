@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     (e) => toNumber(e.amount)
   );
 
-  const byUser = groupSum(scopedReports, (r) => r.user_name, (r) => toNumber(r.work_hours));
+  const userHeadcountByUser = groupSum(scopedReports, (r) => r.user_name, (r) => toNumber(r.work_hours) / HOURS_PER_HEADCOUNT);
 
   const byCategory = groupSum(scopedExpenses, (e) => e.category, (e) => toNumber(e.amount));
 
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     projectHeadcount,
     projectExpensesByCategory,
-    userHours: toChartData(byUser),
+    userHeadcount: toChartData(userHeadcountByUser),
     expenseByCategory: toChartData(byCategory),
     subcontractorHeadcount: toChartData(subcontractorHeadcount),
   });
