@@ -16,9 +16,11 @@ import {
 } from "recharts";
 
 type Point = { name: string; value: number };
+type PivotRow = { name: string; [key: string]: string | number };
+type Pivot = { data: PivotRow[]; columns: string[] };
 type DashboardData = {
-  projectHours: Point[];
-  projectExpenses: Point[];
+  projectHoursByUser: Pivot;
+  projectExpensesByCategory: Pivot;
   userHours: Point[];
   expenseByCategory: Point[];
   subcontractorHours: Point[];
@@ -56,6 +58,46 @@ function Bars({ title, unit, data }: { title: string; unit: string; data: Point[
             />
             <Tooltip formatter={(v) => `${Number(v).toLocaleString()} ${unit}`} />
             <Bar dataKey="value" fill={SERIES_BLUE} radius={[0, 4, 4, 0]} maxBarSize={28} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </section>
+  );
+}
+
+function StackedBars({ title, unit, pivot }: { title: string; unit: string; pivot: Pivot }) {
+  const { data, columns } = pivot;
+  return (
+    <section className="bg-white rounded-lg border p-4">
+      <h2 className="font-medium text-slate-800 mb-3">{title}</h2>
+      {data.length === 0 ? (
+        <p className="text-sm text-slate-400">データがありません</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={Math.max(140, data.length * 46) + (columns.length > 4 ? 24 : 0)}>
+          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24 }}>
+            <CartesianGrid horizontal={false} stroke={GRIDLINE} />
+            <XAxis type="number" tick={{ fontSize: 12, fill: INK_MUTED }} axisLine={{ stroke: GRIDLINE }} tickLine={false} />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={140}
+              tick={{ fontSize: 12, fill: "#0b0b0b" }}
+              axisLine={{ stroke: GRIDLINE }}
+              tickLine={false}
+            />
+            <Tooltip formatter={(v) => `${Number(v).toLocaleString()} ${unit}`} />
+            {columns.length > 1 && <Legend />}
+            {columns.map((col, i) => (
+              <Bar
+                key={col}
+                dataKey={col}
+                name={col}
+                stackId="stack"
+                fill={CATEGORICAL[i % CATEGORICAL.length]}
+                radius={i === columns.length - 1 ? [0, 4, 4, 0] : undefined}
+                maxBarSize={28}
+              />
+            ))}
           </BarChart>
         </ResponsiveContainer>
       )}
@@ -123,8 +165,8 @@ export default function DashboardClient() {
         <p className="text-slate-400 text-sm">読み込み中...</p>
       ) : (
         <>
-          <Bars title="案件別 実働時間" unit="時間" data={data.projectHours} />
-          <Bars title="案件別 経費" unit="円" data={data.projectExpenses} />
+          <StackedBars title="案件別 実働時間（作業者別）" unit="時間" pivot={data.projectHoursByUser} />
+          <StackedBars title="案件別 経費（費目別）" unit="円" pivot={data.projectExpensesByCategory} />
           <Bars title="作業者別 稼働時間" unit="時間" data={data.userHours} />
           <ExpensePie data={data.expenseByCategory} />
           <Bars title="協力業者別 稼働時間" unit="時間" data={data.subcontractorHours} />

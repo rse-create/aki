@@ -1,6 +1,18 @@
 import { google } from "googleapis";
+import { COLUMN_LABELS } from "./sheet-columns";
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!;
+
+function labelToField(tab: string, label: string): string {
+  const map = COLUMN_LABELS[tab];
+  if (!map) return label;
+  const entry = Object.entries(map).find(([, v]) => v === label);
+  return entry ? entry[0] : label;
+}
+
+function fieldToLabel(tab: string, field: string): string {
+  return COLUMN_LABELS[tab]?.[field] ?? field;
+}
 
 function getAuth() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -31,7 +43,7 @@ export async function getRecords(tab: string): Promise<SheetRow[]> {
   });
   const values = res.data.values ?? [];
   if (values.length === 0) return [];
-  const header = values[0];
+  const header = values[0].map((label) => labelToField(tab, label));
   return values.slice(1).map((row, i) => {
     const record = { _row: i + 2 } as SheetRow;
     header.forEach((key, idx) => {
@@ -50,10 +62,10 @@ async function getHeader(tab: string): Promise<string[]> {
   return res.data.values?.[0] ?? [];
 }
 
-/** Appends one row, mapping the record's keys to the tab's existing header order. */
+/** Appends one row, mapping the record's semantic keys to the tab's Japanese header order. */
 export async function appendRecord(tab: string, record: SheetInput): Promise<void> {
   const header = await getHeader(tab);
-  const row = header.map((key) => record[key] ?? "");
+  const row = header.map((label) => record[labelToField(tab, label)] ?? "");
   const sheets = getSheetsClient();
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
@@ -66,7 +78,7 @@ export async function appendRecord(tab: string, record: SheetInput): Promise<voi
 export async function appendRecords(tab: string, records: SheetInput[]): Promise<void> {
   if (records.length === 0) return;
   const header = await getHeader(tab);
-  const rows = records.map((record) => header.map((key) => record[key] ?? ""));
+  const rows = records.map((record) => header.map((label) => record[labelToField(tab, label)] ?? ""));
   const sheets = getSheetsClient();
   await sheets.spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
@@ -76,7 +88,7 @@ export async function appendRecords(tab: string, records: SheetInput[]): Promise
   });
 }
 
-/** Updates a single field on an existing row (row number as returned by getRecords' _row). */
+/** Updates a single field on an existing row (row number as returned by getRecords' _row). `field` is the semantic key. */
 export async function updateField(
   tab: string,
   row: number,
@@ -84,7 +96,7 @@ export async function updateField(
   value: string
 ): Promise<void> {
   const header = await getHeader(tab);
-  const colIndex = header.indexOf(field);
+  const colIndex = header.indexOf(fieldToLabel(tab, field));
   if (colIndex === -1) throw new Error(`Unknown field ${field} on ${tab}`);
   const colLetter = columnLetter(colIndex);
   const sheets = getSheetsClient();
