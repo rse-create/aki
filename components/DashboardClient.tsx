@@ -19,11 +19,11 @@ type Point = { name: string; value: number };
 type PivotRow = { name: string; [key: string]: string | number };
 type Pivot = { data: PivotRow[]; columns: string[] };
 type DashboardData = {
-  projectHoursByUser: Pivot;
+  projectHeadcountByUser: Point[];
+  projectHeadcountBySubcontractor: Point[];
   projectExpensesByCategory: Pivot;
   userHours: Point[];
   expenseByCategory: Point[];
-  subcontractorHours: Point[];
   subcontractorHeadcount: Point[];
 };
 
@@ -165,11 +165,11 @@ export default function DashboardClient() {
         <p className="text-slate-400 text-sm">読み込み中...</p>
       ) : (
         <>
-          <StackedBars title="案件別 実働時間（作業者別）" unit="時間" pivot={data.projectHoursByUser} />
+          <Bars title="案件別 人工数（社員）" unit="人工" data={data.projectHeadcountByUser} />
+          <Bars title="案件別 人工数（協力業者）" unit="人工" data={data.projectHeadcountBySubcontractor} />
           <StackedBars title="案件別 経費（費目別）" unit="円" pivot={data.projectExpensesByCategory} />
           <Bars title="作業者別 稼働時間" unit="時間" data={data.userHours} />
           <ExpensePie data={data.expenseByCategory} />
-          <Bars title="協力業者別 稼働時間" unit="時間" data={data.subcontractorHours} />
           <Bars title="協力業者別 人工数" unit="人工" data={data.subcontractorHeadcount} />
         </>
       )}

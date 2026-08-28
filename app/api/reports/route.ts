@@ -6,7 +6,7 @@ import { toNumber } from "@/lib/num";
 
 const BREAK_MINUTES_DEFAULT = 60;
 
-type SubcontractorInput = { subcontractorId: string; name: string; headcount: string; hours: string; memo: string };
+type SubcontractorInput = { subcontractorId: string; name: string; headcount: string; memo: string };
 type ExpenseInput = { category: string; amount: string; memo: string };
 
 /** Returns null if the shift/break combination doesn't produce a sane (non-negative) duration. */
@@ -71,11 +71,11 @@ export async function POST(request: NextRequest) {
   }
 
   const validSubcontractors = hasSubcontractor
-    ? (subcontractors ?? []).filter((s) => s.name && toNumber(s.headcount) > 0 && toNumber(s.hours) > 0)
+    ? (subcontractors ?? []).filter((s) => s.name && toNumber(s.headcount) > 0)
     : [];
   if (hasSubcontractor && validSubcontractors.length !== (subcontractors ?? []).length) {
     return NextResponse.json(
-      { error: "協力業者の人工数・稼働時間を正しく入力してください" },
+      { error: "協力業者の人工数を正しく入力してください" },
       { status: 400 }
     );
   }
@@ -107,7 +107,6 @@ export async function POST(request: NextRequest) {
         subcontractor_id: s.subcontractorId ?? "",
         subcontractor_name: s.name,
         headcount: String(toNumber(s.headcount)),
-        hours: String(toNumber(s.hours)),
         memo: s.memo ?? "",
       }))
     );

@@ -23,7 +23,18 @@ export async function GET(request: NextRequest) {
 
   const projectNameByReportId = new Map(scopedReports.map((r) => [r.id, r.project_name]));
 
-  const projectHoursByUser = pivot(scopedReports, (r) => r.project_name, (r) => r.user_name, (r) => toNumber(r.work_hours));
+  const HOURS_PER_HEADCOUNT = 8;
+
+  const projectHeadcountByUser = groupSum(
+    scopedReports,
+    (r) => r.project_name,
+    (r) => toNumber(r.work_hours) / HOURS_PER_HEADCOUNT
+  );
+  const projectHeadcountBySubcontractor = groupSum(
+    scopedSubcontractors,
+    (s) => projectNameByReportId.get(s.report_id) ?? "不明",
+    (s) => toNumber(s.headcount)
+  );
   const projectExpensesByCategory = pivot(
     scopedExpenses,
     (e) => projectNameByReportId.get(e.report_id) ?? "不明",
@@ -35,15 +46,14 @@ export async function GET(request: NextRequest) {
 
   const byCategory = groupSum(scopedExpenses, (e) => e.category, (e) => toNumber(e.amount));
 
-  const subcontractorHours = groupSum(scopedSubcontractors, (s) => s.subcontractor_name, (s) => toNumber(s.hours));
   const subcontractorHeadcount = groupSum(scopedSubcontractors, (s) => s.subcontractor_name, (s) => toNumber(s.headcount));
 
   return NextResponse.json({
-    projectHoursByUser,
+    projectHeadcountByUser: toChartData(projectHeadcountByUser),
+    projectHeadcountBySubcontractor: toChartData(projectHeadcountBySubcontractor),
     projectExpensesByCategory,
     userHours: toChartData(byUser),
     expenseByCategory: toChartData(byCategory),
-    subcontractorHours: toChartData(subcontractorHours),
     subcontractorHeadcount: toChartData(subcontractorHeadcount),
   });
 }

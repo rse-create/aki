@@ -8,7 +8,7 @@ type Subcontractor = { id: string; name: string };
 type Category = { id: string; name: string };
 
 type ExpenseRow = { category: string; amount: string; memo: string };
-type SubcontractorRow = { subcontractorId: string; name: string; headcount: string; hours: string; memo: string };
+type SubcontractorRow = { subcontractorId: string; name: string; headcount: string; memo: string };
 
 const OTHER = "__other__";
 
@@ -66,7 +66,7 @@ export default function ReportForm({
   function addSubRow() {
     setSubRows((rows) => [
       ...rows,
-      { subcontractorId: subcontractors[0]?.id ?? OTHER, name: subcontractors[0]?.name ?? "", headcount: "1", hours: "", memo: "" },
+      { subcontractorId: subcontractors[0]?.id ?? OTHER, name: subcontractors[0]?.name ?? "", headcount: "1", memo: "" },
     ]);
   }
   function updateSubRow(i: number, patch: Partial<SubcontractorRow>) {
@@ -96,17 +96,12 @@ export default function ReportForm({
     if (hasSubcontractor) {
       for (const [i, row] of subRows.entries()) {
         const headcount = Number(row.headcount);
-        const hours = Number(row.hours);
         if (!row.name) {
           setError(`協力業者 ${i + 1}行目：業者名を入力してください`);
           return;
         }
         if (row.headcount === "" || !Number.isFinite(headcount) || headcount <= 0) {
           setError(`協力業者 ${i + 1}行目：人工数を正しく入力してください（1以上）`);
-          return;
-        }
-        if (row.hours === "" || !Number.isFinite(hours) || hours <= 0) {
-          setError(`協力業者 ${i + 1}行目：稼働時間を正しく入力してください（0より大きい値）`);
           return;
         }
       }
@@ -306,28 +301,15 @@ export default function ReportForm({
                     className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 )}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs text-slate-500 mb-1">人工数</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={row.headcount}
-                      onChange={(e) => updateSubRow(i, { headcount: e.target.value })}
-                      className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-500 mb-1">稼働時間</label>
-                    <input
-                      type="number"
-                      min="0.5"
-                      step="0.5"
-                      value={row.hours}
-                      onChange={(e) => updateSubRow(i, { hours: e.target.value })}
-                      className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">人工数</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={row.headcount}
+                    onChange={(e) => updateSubRow(i, { headcount: e.target.value })}
+                    className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
                 <input
                   type="text"
