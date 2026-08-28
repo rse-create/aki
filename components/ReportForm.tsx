@@ -111,13 +111,13 @@ export default function ReportForm({
   return (
     <div className="space-y-6">
       <section className="bg-white rounded-lg border-t-4 border-t-blue-600 border-x border-b p-4 space-y-4">
-        <div>
+        <div className="min-w-0">
           <label className="block text-sm text-slate-500 mb-1">作業日</label>
           <input
             type="date"
             value={workDate}
             onChange={(e) => setWorkDate(e.target.value)}
-            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="block w-full min-w-0 max-w-full box-border border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
         <div>
@@ -134,23 +134,23 @@ export default function ReportForm({
             ))}
           </select>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="min-w-0">
             <label className="block text-sm text-slate-500 mb-1">開始</label>
             <input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full min-w-0 border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full min-w-0 max-w-full box-border border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="block text-sm text-slate-500 mb-1">終了</label>
             <input
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="w-full min-w-0 border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full min-w-0 max-w-full box-border border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
