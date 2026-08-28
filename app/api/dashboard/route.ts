@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRecords } from "@/lib/sheets";
 import { requireSession } from "@/lib/require-session";
+import { toNumber } from "@/lib/num";
 
 export async function GET(request: NextRequest) {
   const auth = await requireSession();
@@ -22,20 +23,20 @@ export async function GET(request: NextRequest) {
 
   const projectNameByReportId = new Map(scopedReports.map((r) => [r.id, r.project_name]));
 
-  const projectHoursByUser = pivot(scopedReports, (r) => r.project_name, (r) => r.user_name, (r) => Number(r.work_hours || 0));
+  const projectHoursByUser = pivot(scopedReports, (r) => r.project_name, (r) => r.user_name, (r) => toNumber(r.work_hours));
   const projectExpensesByCategory = pivot(
     scopedExpenses,
     (e) => projectNameByReportId.get(e.report_id) ?? "不明",
     (e) => e.category,
-    (e) => Number(e.amount || 0)
+    (e) => toNumber(e.amount)
   );
 
-  const byUser = groupSum(scopedReports, (r) => r.user_name, (r) => Number(r.work_hours || 0));
+  const byUser = groupSum(scopedReports, (r) => r.user_name, (r) => toNumber(r.work_hours));
 
-  const byCategory = groupSum(scopedExpenses, (e) => e.category, (e) => Number(e.amount || 0));
+  const byCategory = groupSum(scopedExpenses, (e) => e.category, (e) => toNumber(e.amount));
 
-  const subcontractorHours = groupSum(scopedSubcontractors, (s) => s.subcontractor_name, (s) => Number(s.hours || 0));
-  const subcontractorHeadcount = groupSum(scopedSubcontractors, (s) => s.subcontractor_name, (s) => Number(s.headcount || 0));
+  const subcontractorHours = groupSum(scopedSubcontractors, (s) => s.subcontractor_name, (s) => toNumber(s.hours));
+  const subcontractorHeadcount = groupSum(scopedSubcontractors, (s) => s.subcontractor_name, (s) => toNumber(s.headcount));
 
   return NextResponse.json({
     projectHoursByUser,

@@ -2,19 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { appendRecord, appendRecords, getRecords } from "@/lib/sheets";
 import { requireSession } from "@/lib/require-session";
+import { toNumber } from "@/lib/num";
 
 const BREAK_MINUTES_DEFAULT = 60;
 
 type SubcontractorInput = { subcontractorId: string; name: string; headcount: string; hours: string; memo: string };
 type ExpenseInput = { category: string; amount: string; memo: string };
 
-function calcWorkHours(start: string, end: string, breakMinutes: number): string {
+/** Returns null if the shift/break combination doesn't produce a sane (non-negative) duration. */
+function calcWorkHours(start: string, end: string, breakMinutes: number): string | null {
+  if (!Number.isFinite(breakMinutes) || breakMinutes < 0) return null;
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
+  if (![sh, sm, eh, em].every(Number.isFinite)) return null;
   let minutes = eh * 60 + em - (sh * 60 + sm);
   if (minutes < 0) minutes += 24 * 60; // overnight shift safety
   minutes -= breakMinutes;
-  return (Math.max(minutes, 0) / 60).toFixed(2);
+  if (minutes < 0) return null;
+  return (minutes / 60).toFixed(2);
 }
 
 export async function POST(request: NextRequest) {
@@ -51,8 +56,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "必須項目が未入力です" }, { status: 400 });
   }
 
+  const safeBreakMinutes = Math.max(0, toNumber(breakMinutes ?? BREAK_MINUTES_DEFAULT));
+  const workHours = calcWorkHours(startTime, endTime, safeBreakMinutes);
+  if (workHours === null) {
+    return NextResponse.json(
+      { error: "開始・終了・休憩時間を確認してください（終了は開始より後にしてください）" },
+      { status: 400 }
+    );
+  }
+
+  const validExpenses = (expenses ?? []).filter((e) => e.category && toNumber(e.amount) > 0);
+  if ((expenses ?? []).length !== validExpenses.length) {
+    return NextResponse.json({ error: "経費の金額を正しく入力してください（0円以下は登録できません）" }, { status: 400 });
+  }
+
+  const validSubcontractors = hasSubcontractor
+    ? (subcontractors ?? []).filter((s) => s.name && toNumber(s.headcount) > 0 && toNumber(s.hours) > 0)
+    : [];
+  if (hasSubcontractor && validSubcontractors.length !== (subcontractors ?? []).length) {
+    return NextResponse.json(
+      { error: "協力業者の人工数・稼働時間を正しく入力してください" },
+      { status: 400 }
+    );
+  }
+
   const reportId = randomUUID();
-  const workHours = calcWorkHours(startTime, endTime, breakMinutes ?? BREAK_MINUTES_DEFAULT);
 
   await appendRecord("日報", {
     id: reportId,
@@ -64,41 +92,37 @@ export async function POST(request: NextRequest) {
     project_name: projectLabel,
     start_time: startTime,
     end_time: endTime,
-    break_minutes: String(breakMinutes ?? BREAK_MINUTES_DEFAULT),
+    break_minutes: String(safeBreakMinutes),
     work_hours: workHours,
     work_content: workContent,
     has_subcontractor: hasSubcontractor ? "はい" : "いいえ",
   });
 
-  if (hasSubcontractor && subcontractors?.length) {
+  if (validSubcontractors.length) {
     await appendRecords(
       "日報_協力業者",
-      subcontractors
-        .filter((s) => s.name)
-        .map((s) => ({
-          id: randomUUID(),
-          report_id: reportId,
-          subcontractor_id: s.subcontractorId ?? "",
-          subcontractor_name: s.name,
-          headcount: s.headcount ?? "",
-          hours: s.hours ?? "",
-          memo: s.memo ?? "",
-        }))
+      validSubcontractors.map((s) => ({
+        id: randomUUID(),
+        report_id: reportId,
+        subcontractor_id: s.subcontractorId ?? "",
+        subcontractor_name: s.name,
+        headcount: String(toNumber(s.headcount)),
+        hours: String(toNumber(s.hours)),
+        memo: s.memo ?? "",
+      }))
     );
   }
 
-  if (expenses?.length) {
+  if (validExpenses.length) {
     await appendRecords(
       "日報_経費",
-      expenses
-        .filter((e) => e.category && e.amount)
-        .map((e) => ({
-          id: randomUUID(),
-          report_id: reportId,
-          category: e.category,
-          amount: e.amount,
-          memo: e.memo ?? "",
-        }))
+      validExpenses.map((e) => ({
+        id: randomUUID(),
+        report_id: reportId,
+        category: e.category,
+        amount: String(toNumber(e.amount)),
+        memo: e.memo ?? "",
+      }))
     );
   }
 

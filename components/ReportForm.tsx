@@ -19,12 +19,13 @@ function todayStr() {
 
 function calcHours(start: string, end: string, breakMinutes: number): string | null {
   if (!start || !end) return null;
+  if (!Number.isFinite(breakMinutes) || breakMinutes < 0) return null;
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
   let minutes = eh * 60 + em - (sh * 60 + sm);
   if (minutes < 0) minutes += 24 * 60;
   minutes -= breakMinutes;
-  if (minutes < 0) return null;
+  if (!Number.isFinite(minutes) || minutes < 0) return null;
   return (minutes / 60).toFixed(2);
 }
 
@@ -77,9 +78,38 @@ export default function ReportForm({
 
   async function submit() {
     setError(null);
-    if (!projectId || !workContent || workHours === null) {
-      setError("案件・作業内容・時刻を確認してください（終了は開始より後にしてください）");
+    if (!projectId || !workContent) {
+      setError("案件・作業内容を入力してください");
       return;
+    }
+    if (breakMinutes < 0 || workHours === null) {
+      setError("開始・終了・休憩時間を確認してください（休憩時間はマイナスにできません。終了は開始より後にしてください）");
+      return;
+    }
+    for (const [i, row] of expenses.entries()) {
+      const amount = Number(row.amount);
+      if (!row.category || row.amount === "" || !Number.isFinite(amount) || amount <= 0) {
+        setError(`経費 ${i + 1}行目：金額を正しく入力してください（0円以下やマイナスは登録できません）`);
+        return;
+      }
+    }
+    if (hasSubcontractor) {
+      for (const [i, row] of subRows.entries()) {
+        const headcount = Number(row.headcount);
+        const hours = Number(row.hours);
+        if (!row.name) {
+          setError(`協力業者 ${i + 1}行目：業者名を入力してください`);
+          return;
+        }
+        if (row.headcount === "" || !Number.isFinite(headcount) || headcount <= 0) {
+          setError(`協力業者 ${i + 1}行目：人工数を正しく入力してください（1以上）`);
+          return;
+        }
+        if (row.hours === "" || !Number.isFinite(hours) || hours <= 0) {
+          setError(`協力業者 ${i + 1}行目：稼働時間を正しく入力してください（0より大きい値）`);
+          return;
+        }
+      }
     }
     setSubmitting(true);
     const project = projects.find((p) => p.id === projectId);
@@ -164,6 +194,7 @@ export default function ReportForm({
           <label className="block text-sm text-slate-500 mb-1">休憩(分)</label>
           <input
             type="number"
+            min="0"
             value={breakMinutes}
             onChange={(e) => setBreakMinutes(Number(e.target.value))}
             className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -210,6 +241,7 @@ export default function ReportForm({
             </div>
             <input
               type="number"
+              min="1"
               placeholder="金額"
               value={row.amount}
               onChange={(e) => updateExpense(i, { amount: e.target.value })}
@@ -279,6 +311,7 @@ export default function ReportForm({
                     <label className="block text-xs text-slate-500 mb-1">人工数</label>
                     <input
                       type="number"
+                      min="1"
                       value={row.headcount}
                       onChange={(e) => updateSubRow(i, { headcount: e.target.value })}
                       className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -288,6 +321,7 @@ export default function ReportForm({
                     <label className="block text-xs text-slate-500 mb-1">稼働時間</label>
                     <input
                       type="number"
+                      min="0.5"
                       step="0.5"
                       value={row.hours}
                       onChange={(e) => updateSubRow(i, { hours: e.target.value })}
