@@ -113,12 +113,14 @@ export default function ReportForm({
       <section className="bg-white rounded-lg border-t-4 border-t-blue-600 border-x border-b p-4 space-y-4">
         <div className="min-w-0">
           <label className="block text-sm text-slate-500 mb-1">作業日</label>
-          <input
-            type="date"
-            value={workDate}
-            onChange={(e) => setWorkDate(e.target.value)}
-            className="block w-full min-w-0 max-w-full box-border border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
+          <div className="w-full overflow-hidden rounded-md border focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+            <input
+              type="date"
+              value={workDate}
+              onChange={(e) => setWorkDate(e.target.value)}
+              className="block w-full border-0 px-3 py-2 focus:outline-none"
+            />
+          </div>
         </div>
         <div>
           <label className="block text-sm text-slate-500 mb-1">案件</label>
@@ -137,21 +139,25 @@ export default function ReportForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="min-w-0">
             <label className="block text-sm text-slate-500 mb-1">開始</label>
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="block w-full min-w-0 max-w-full box-border border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div className="w-full overflow-hidden rounded-md border focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="block w-full border-0 px-3 py-2 focus:outline-none"
+              />
+            </div>
           </div>
           <div className="min-w-0">
             <label className="block text-sm text-slate-500 mb-1">終了</label>
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="block w-full min-w-0 max-w-full box-border border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div className="w-full overflow-hidden rounded-md border focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="block w-full border-0 px-3 py-2 focus:outline-none"
+              />
+            </div>
           </div>
         </div>
         <div className="w-32">
