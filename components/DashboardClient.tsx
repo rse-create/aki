@@ -6,6 +6,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   Pie,
   PieChart,
@@ -13,14 +14,15 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  type RenderableText,
 } from "recharts";
 
 type Point = { name: string; value: number };
 type PivotRow = { name: string; [key: string]: string | number };
 type Pivot = { data: PivotRow[]; columns: string[] };
+type ProjectHeadcountRow = { name: string; employee: number; subcontractor: number; total: number };
 type DashboardData = {
-  projectHeadcountByUser: Point[];
-  projectHeadcountBySubcontractor: Point[];
+  projectHeadcount: ProjectHeadcountRow[];
   projectExpensesByCategory: Pivot;
   userHours: Point[];
   expenseByCategory: Point[];
@@ -30,6 +32,8 @@ type DashboardData = {
 const INK_MUTED = "#898781";
 const GRIDLINE = "#e1e0d9";
 const SERIES_BLUE = "#2a78d6";
+const EMPLOYEE_COLOR = "#2a78d6";
+const SUBCONTRACTOR_COLOR = "#eb6834";
 const CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 
 function currentMonth() {
@@ -58,6 +62,63 @@ function Bars({ title, unit, data }: { title: string; unit: string; data: Point[
             />
             <Tooltip formatter={(v) => `${Number(v).toLocaleString()} ${unit}`} />
             <Bar dataKey="value" fill={SERIES_BLUE} radius={[0, 4, 4, 0]} maxBarSize={28} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </section>
+  );
+}
+
+function headcountLabel(v: RenderableText) {
+  const n = Number(v);
+  return n > 0 ? n.toLocaleString() : "";
+}
+
+function totalLabel(v: RenderableText) {
+  return `計 ${Number(v).toLocaleString()}`;
+}
+
+function ProjectHeadcountBars({ data }: { data: ProjectHeadcountRow[] }) {
+  return (
+    <section className="bg-white rounded-lg border p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-medium text-slate-800">案件別 人工数</h2>
+        <div className="flex items-center gap-3 text-xs text-slate-500">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: EMPLOYEE_COLOR }} />
+            社員
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: SUBCONTRACTOR_COLOR }} />
+            協力業者
+          </span>
+        </div>
+      </div>
+      {data.length === 0 ? (
+        <p className="text-sm text-slate-400">データがありません</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={Math.max(120, data.length * 40)}>
+          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 40 }}>
+            <CartesianGrid horizontal={false} stroke={GRIDLINE} />
+            <XAxis type="number" tick={{ fontSize: 12, fill: INK_MUTED }} axisLine={{ stroke: GRIDLINE }} tickLine={false} />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={140}
+              tick={{ fontSize: 12, fill: "#0b0b0b" }}
+              axisLine={{ stroke: GRIDLINE }}
+              tickLine={false}
+            />
+            <Tooltip
+              formatter={(v, key) => [`${Number(v).toLocaleString()} 人工`, key === "employee" ? "社員" : key === "subcontractor" ? "協力業者" : "合計"]}
+            />
+            <Bar dataKey="employee" name="社員" stackId="stack" fill={EMPLOYEE_COLOR} maxBarSize={28}>
+              <LabelList dataKey="employee" position="center" formatter={headcountLabel} fill="#fff" fontSize={11} />
+            </Bar>
+            <Bar dataKey="subcontractor" name="協力業者" stackId="stack" fill={SUBCONTRACTOR_COLOR} radius={[0, 4, 4, 0]} maxBarSize={28}>
+              <LabelList dataKey="subcontractor" position="center" formatter={headcountLabel} fill="#fff" fontSize={11} />
+              <LabelList dataKey="total" position="right" formatter={totalLabel} fill={INK_MUTED} fontSize={12} />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       )}
@@ -165,8 +226,7 @@ export default function DashboardClient() {
         <p className="text-slate-400 text-sm">読み込み中...</p>
       ) : (
         <>
-          <Bars title="案件別 人工数（社員）" unit="人工" data={data.projectHeadcountByUser} />
-          <Bars title="案件別 人工数（協力業者）" unit="人工" data={data.projectHeadcountBySubcontractor} />
+          <ProjectHeadcountBars data={data.projectHeadcount} />
           <StackedBars title="案件別 経費（費目別）" unit="円" pivot={data.projectExpensesByCategory} />
           <Bars title="作業者別 稼働時間" unit="時間" data={data.userHours} />
           <ExpensePie data={data.expenseByCategory} />
