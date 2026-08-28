@@ -57,7 +57,7 @@ export default function NavBar({
                 onClick={() => setOpen(false)}
                 className={`block px-3 py-2.5 rounded-md text-base ${
                   pathname === l.href
-                    ? "bg-slate-900 text-white"
+                    ? "bg-blue-600 text-white"
                     : "text-slate-700 hover:bg-slate-100"
                 }`}
               >
@@ -82,7 +82,7 @@ export default function NavBar({
                 href={l.href}
                 className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
                   pathname === l.href
-                    ? "bg-slate-900 text-white"
+                    ? "bg-blue-600 text-white"
                     : "text-slate-600 hover:bg-slate-100"
                 }`}
               >

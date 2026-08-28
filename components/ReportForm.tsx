@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Project = { id: string; label: string };
 type Subcontractor = { id: string; name: string };
@@ -46,7 +47,8 @@ export default function ReportForm({
   const [hasSubcontractor, setHasSubcontractor] = useState(false);
   const [subRows, setSubRows] = useState<SubcontractorRow[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const workHours = useMemo(() => calcHours(startTime, endTime, breakMinutes), [startTime, endTime, breakMinutes]);
 
@@ -74,9 +76,9 @@ export default function ReportForm({
   }
 
   async function submit() {
-    setMessage(null);
+    setError(null);
     if (!projectId || !workContent || workHours === null) {
-      setMessage({ type: "error", text: "案件・作業内容・時刻を確認してください（終了は開始より後にしてください）" });
+      setError("案件・作業内容・時刻を確認してください（終了は開始より後にしてください）");
       return;
     }
     setSubmitting(true);
@@ -97,29 +99,25 @@ export default function ReportForm({
         expenses,
       }),
     });
-    setSubmitting(false);
     if (!res.ok) {
+      setSubmitting(false);
       const body = await res.json();
-      setMessage({ type: "error", text: body.error ?? "送信に失敗しました" });
+      setError(body.error ?? "送信に失敗しました");
       return;
     }
-    setMessage({ type: "ok", text: "日報を送信しました" });
-    setWorkContent("");
-    setExpenses([]);
-    setHasSubcontractor(false);
-    setSubRows([]);
+    router.push("/report/complete");
   }
 
   return (
     <div className="space-y-6">
-      <section className="bg-white rounded-lg border p-4 space-y-4">
+      <section className="bg-white rounded-lg border-t-4 border-t-blue-600 border-x border-b p-4 space-y-4">
         <div>
           <label className="block text-sm text-slate-500 mb-1">作業日</label>
           <input
             type="date"
             value={workDate}
             onChange={(e) => setWorkDate(e.target.value)}
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
         <div>
@@ -127,7 +125,7 @@ export default function ReportForm({
           <select
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
@@ -136,14 +134,14 @@ export default function ReportForm({
             ))}
           </select>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm text-slate-500 mb-1">開始</label>
             <input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full border rounded-md px-3 py-2"
+              className="w-full min-w-0 border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <div>
@@ -152,21 +150,21 @@ export default function ReportForm({
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="w-full border rounded-md px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-500 mb-1">休憩(分)</label>
-            <input
-              type="number"
-              value={breakMinutes}
-              onChange={(e) => setBreakMinutes(Number(e.target.value))}
-              className="w-full border rounded-md px-3 py-2"
+              className="w-full min-w-0 border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
-        <p className="text-sm text-slate-500">
-          実働時間: <span className="font-semibold text-slate-800">{workHours ?? "―"} 時間</span>
+        <div className="w-32">
+          <label className="block text-sm text-slate-500 mb-1">休憩(分)</label>
+          <input
+            type="number"
+            value={breakMinutes}
+            onChange={(e) => setBreakMinutes(Number(e.target.value))}
+            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <p className="text-sm bg-blue-50 text-blue-800 rounded-md px-3 py-2">
+          実働時間: <span className="font-semibold">{workHours ?? "―"} 時間</span>
         </p>
         <div>
           <label className="block text-sm text-slate-500 mb-1">作業内容及び進捗状況</label>
@@ -174,7 +172,7 @@ export default function ReportForm({
             value={workContent}
             onChange={(e) => setWorkContent(e.target.value)}
             rows={4}
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
       </section>
@@ -187,35 +185,37 @@ export default function ReportForm({
           </button>
         </div>
         {expenses.map((row, i) => (
-          <div key={i} className="flex gap-2 items-start">
-            <select
-              value={row.category}
-              onChange={(e) => updateExpense(i, { category: e.target.value })}
-              className="border rounded-md px-2 py-2 flex-1"
-            >
-              {categories.map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+          <div key={i} className="border rounded-md p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <select
+                value={row.category}
+                onChange={(e) => updateExpense(i, { category: e.target.value })}
+                className="border rounded-md px-2 py-2 flex-1 min-w-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <button onClick={() => removeExpense(i)} className="text-slate-400 px-2 flex-shrink-0">
+                ✕
+              </button>
+            </div>
             <input
               type="number"
               placeholder="金額"
               value={row.amount}
               onChange={(e) => updateExpense(i, { amount: e.target.value })}
-              className="border rounded-md px-2 py-2 w-24"
+              className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <input
               type="text"
               placeholder="メモ"
               value={row.memo}
               onChange={(e) => updateExpense(i, { memo: e.target.value })}
-              className="border rounded-md px-2 py-2 flex-1"
+              className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-            <button onClick={() => removeExpense(i)} className="text-slate-400 px-2">
-              ✕
-            </button>
           </div>
         ))}
         {expenses.length === 0 && <p className="text-sm text-slate-400">経費はありません</p>}
@@ -230,6 +230,7 @@ export default function ReportForm({
               setHasSubcontractor(e.target.checked);
               if (e.target.checked && subRows.length === 0) addSubRow();
             }}
+            className="w-4 h-4 accent-blue-600"
           />
           <span className="font-medium text-slate-800">協力業者は入りましたか？</span>
         </label>
@@ -245,7 +246,7 @@ export default function ReportForm({
                       const sc = subcontractors.find((s) => s.id === e.target.value);
                       updateSubRow(i, { subcontractorId: e.target.value, name: sc?.name ?? "" });
                     }}
-                    className="border rounded-md px-2 py-2 flex-1"
+                    className="border rounded-md px-2 py-2 flex-1 min-w-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     {subcontractors.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -264,7 +265,7 @@ export default function ReportForm({
                     placeholder="業者名を入力"
                     value={row.name}
                     onChange={(e) => updateSubRow(i, { name: e.target.value })}
-                    className="w-full border rounded-md px-2 py-2"
+                    className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 )}
                 <div className="grid grid-cols-2 gap-2">
@@ -274,7 +275,7 @@ export default function ReportForm({
                       type="number"
                       value={row.headcount}
                       onChange={(e) => updateSubRow(i, { headcount: e.target.value })}
-                      className="w-full border rounded-md px-2 py-2"
+                      className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                   <div>
@@ -284,7 +285,7 @@ export default function ReportForm({
                       step="0.5"
                       value={row.hours}
                       onChange={(e) => updateSubRow(i, { hours: e.target.value })}
-                      className="w-full border rounded-md px-2 py-2"
+                      className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -293,7 +294,7 @@ export default function ReportForm({
                   placeholder="備考"
                   value={row.memo}
                   onChange={(e) => updateSubRow(i, { memo: e.target.value })}
-                  className="w-full border rounded-md px-2 py-2"
+                  className="w-full border rounded-md px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             ))}
@@ -304,14 +305,12 @@ export default function ReportForm({
         )}
       </section>
 
-      {message && (
-        <p className={message.type === "ok" ? "text-green-700" : "text-red-600"}>{message.text}</p>
-      )}
+      {error && <p className="text-red-600 text-sm">{error}</p>}
 
       <button
         onClick={submit}
         disabled={submitting}
-        className="w-full bg-slate-900 text-white rounded-md py-3 font-medium disabled:opacity-40"
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-md py-3 font-medium disabled:opacity-40 transition-colors"
       >
         {submitting ? "送信中..." : "送信する"}
       </button>
