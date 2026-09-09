@@ -39,6 +39,8 @@ export const COLUMN_LABELS: { [tab: string]: { [field: string]: string } } = {
     id: "ID",
     client_name: "元請け会社名",
     project_name: "案件名称",
+    start_date: "工期開始日",
+    end_date: "工期終了日",
     status: "ステータス",
     created_at: "登録日",
   },

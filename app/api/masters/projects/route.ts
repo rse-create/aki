@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { appendRecord, getRecords, updateField } from "@/lib/sheets";
 import { requireAdmin, requireSession } from "@/lib/require-session";
+import { createProjectPeriodEvent } from "@/lib/calendar";
 
 export async function GET() {
   const auth = await requireSession();
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
 
-  const { clientName, projectName } = await request.json();
+  const { clientName, projectName, startDate, endDate } = await request.json();
   if (!projectName) {
     return NextResponse.json({ error: "案件名を入力してください" }, { status: 400 });
   }
@@ -23,9 +24,23 @@ export async function POST(request: NextRequest) {
     id: randomUUID(),
     client_name: clientName ?? "",
     project_name: projectName,
+    start_date: startDate ?? "",
+    end_date: endDate ?? "",
     status: "稼働中",
     created_at: new Date().toISOString(),
   });
+
+  if (startDate) {
+    try {
+      await createProjectPeriodEvent({
+        title: clientName ? `【${clientName}】${projectName}` : projectName,
+        startDate,
+        endDate,
+      });
+    } catch (err) {
+      console.error("Googleカレンダーへの登録に失敗しました", err);
+    }
+  }
 
   return NextResponse.json({ ok: true });
 }

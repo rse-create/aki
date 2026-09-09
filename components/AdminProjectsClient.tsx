@@ -2,12 +2,26 @@
 
 import { useState } from "react";
 
-type ProjectItem = { id: string; clientName: string; projectName: string; status: string };
+type ProjectItem = {
+  id: string;
+  clientName: string;
+  projectName: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+};
+
+function formatPeriod(startDate: string, endDate: string): string {
+  if (!startDate && !endDate) return "";
+  return `工期: ${startDate || "未定"} 〜 ${endDate || "未定"}`;
+}
 
 export default function AdminProjectsClient({ initialProjects }: { initialProjects: ProjectItem[] }) {
   const [projects, setProjects] = useState(initialProjects);
   const [clientName, setClientName] = useState("");
   const [projectName, setProjectName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function add() {
@@ -16,14 +30,16 @@ export default function AdminProjectsClient({ initialProjects }: { initialProjec
     await fetch("/api/masters/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientName, projectName }),
+      body: JSON.stringify({ clientName, projectName, startDate, endDate }),
     });
     setSaving(false);
     setClientName("");
     setProjectName("");
+    setStartDate("");
+    setEndDate("");
     setProjects((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), clientName, projectName, status: "稼働中" },
+      { id: crypto.randomUUID(), clientName, projectName, startDate, endDate, status: "稼働中" },
     ]);
   }
 
@@ -55,6 +71,27 @@ export default function AdminProjectsClient({ initialProjects }: { initialProjec
           onChange={(e) => setProjectName(e.target.value)}
           className="w-full border rounded-md px-3 py-2"
         />
+        <div className="flex items-center gap-2">
+          <label className="flex-1 space-y-1">
+            <span className="block text-xs text-slate-500">工期開始日</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full border rounded-md px-3 py-2 text-slate-800"
+            />
+          </label>
+          <span className="pt-5 text-slate-400">〜</span>
+          <label className="flex-1 space-y-1">
+            <span className="block text-xs text-slate-500">工期終了日</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full border rounded-md px-3 py-2 text-slate-800"
+            />
+          </label>
+        </div>
         <button
           onClick={add}
           disabled={saving || !projectName}
@@ -72,11 +109,14 @@ export default function AdminProjectsClient({ initialProjects }: { initialProjec
                 {p.clientName ? `【${p.clientName}】` : ""}
                 {p.projectName}
               </p>
+              {formatPeriod(p.startDate, p.endDate) && (
+                <p className="text-sm text-slate-500">{formatPeriod(p.startDate, p.endDate)}</p>
+              )}
               <p className="text-sm text-slate-500">{p.status}</p>
             </div>
             <button
               onClick={() => toggle(p.id, p.status)}
-              className="text-sm border rounded-md px-3 py-1.5"
+              className="text-sm text-slate-700 border rounded-md px-3 py-1.5"
             >
               {p.status === "稼働中" ? "稼働終了にする" : "稼働中に戻す"}
             </button>

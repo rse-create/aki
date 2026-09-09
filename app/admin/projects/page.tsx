@@ -17,6 +17,8 @@ export default async function AdminProjectsPage() {
             id: p.id,
             clientName: p.client_name,
             projectName: p.project_name,
+            startDate: p.start_date,
+            endDate: p.end_date,
             status: p.status,
           }))}
         />
