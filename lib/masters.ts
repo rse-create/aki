@@ -4,6 +4,7 @@ export async function getActiveProjects() {
   const rows = await getRecords("案件マスタ");
   return rows
     .filter((r) => r.status === "稼働中")
+    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))
     .map((r) => ({
       id: r.id,
       clientName: r.client_name,

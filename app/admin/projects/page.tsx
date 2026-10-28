@@ -5,7 +5,9 @@ import AdminProjectsClient from "@/components/AdminProjectsClient";
 
 export default async function AdminProjectsPage() {
   const user = await getCurrentUser();
-  const projects = await getRecords("案件マスタ");
+  const projects = (await getRecords("案件マスタ"))
+    .filter((p) => p.id)
+    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
 
   return (
     <div className="min-h-screen bg-slate-50">
