@@ -62,30 +62,38 @@ async function getHeader(tab: string): Promise<string[]> {
   return res.data.values?.[0] ?? [];
 }
 
-/** Appends one row, mapping the record's semantic keys to the tab's Japanese header order. */
-export async function appendRecord(tab: string, record: SheetInput): Promise<void> {
-  const header = await getHeader(tab);
-  const row = header.map((label) => record[labelToField(tab, label)] ?? "");
+/**
+ * Writes rows directly below the last used row, always starting at column A.
+ * (values.append's "table detection" shifts rows sideways when the sheet has
+ * blank columns or misaligned rows, so we compute the target row ourselves.)
+ */
+async function writeRowsAtEnd(tab: string, rows: string[][]): Promise<void> {
   const sheets = getSheetsClient();
-  await sheets.spreadsheets.values.append({
+  const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: tab,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [row] },
   });
+  const nextRow = (res.data.values?.length ?? 0) + 1;
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${tab}!A${nextRow}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: rows },
+  });
+}
+
+/** Appends one row, mapping the record's semantic keys to the tab's Japanese header order. */
+export async function appendRecord(tab: string, record: SheetInput): Promise<void> {
+  await appendRecords(tab, [record]);
 }
 
 export async function appendRecords(tab: string, records: SheetInput[]): Promise<void> {
   if (records.length === 0) return;
   const header = await getHeader(tab);
-  const rows = records.map((record) => header.map((label) => record[labelToField(tab, label)] ?? ""));
-  const sheets = getSheetsClient();
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: SHEET_ID,
-    range: tab,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: rows },
-  });
+  const rows = records.map((record) =>
+    header.map((label) => (label ? record[labelToField(tab, label)] ?? "" : ""))
+  );
+  await writeRowsAtEnd(tab, rows);
 }
 
 /** Updates a single field on an existing row (row number as returned by getRecords' _row). `field` is the semantic key. */
